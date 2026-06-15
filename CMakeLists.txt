@@ -58,6 +58,10 @@ target_include_directories(nlohmann_json INTERFACE ${json_SOURCE_DIR})
 add_library(ipc STATIC source/ipc/SharedMemory.cpp)
 target_include_directories(ipc PUBLIC source/ipc)
 
+add_library(http STATIC source/http/HTTPServer.cpp)
+target_include_directories(http PUBLIC source/http)
+target_link_libraries(http PUBLIC ws2_32)
+
 add_executable(AlgoLensRenderer
   source/renderers/components/variable/Variables.cpp
   source/renderers/components/array/Array.cpp
@@ -79,6 +83,10 @@ target_link_libraries(AlgoLensRenderer PRIVATE
 # ---- The test writer (stands in for the CEF shell)
 add_executable(IRWriter source/tools/ir_writer_main.cpp)
 target_link_libraries(IRWriter PRIVATE ipc)
+
+# ---- HTTP server smoke test
+add_executable(HTTPServerTest source/tools/http_test_main.cpp)
+target_link_libraries(HTTPServerTest PRIVATE http)
 
 add_custom_command(TARGET AlgoLensRenderer POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
