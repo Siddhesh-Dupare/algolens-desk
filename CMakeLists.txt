@@ -62,6 +62,18 @@ add_library(http STATIC source/http/HTTPServer.cpp)
 target_include_directories(http PUBLIC source/http)
 target_link_libraries(http PUBLIC ws2_32)
 
+# ---- CEF (Chromium Embedded Framework)
+set(CEF_ROOT "${CMAKE_SOURCE_DIR}/external/cef")
+list(APPEND CMAKE_MODULE_PATH "${CEF_ROOT}/cmake")
+
+set (CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+set(CEF_DEBUG_INFO_FLAG "/Z7" CACHE STRING "" FORCE)
+
+find_package(CEF REQUIRED)
+
+add_subdirectory(${CEF_ROOT}/libcef_dll libcef_dll_wrapper)
+# ---- CEF end
+
 add_executable(AlgoLensRenderer
   source/renderers/components/variable/Variables.cpp
   source/renderers/components/array/Array.cpp
