@@ -8,6 +8,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # ---- Windows-specific settings
 if (MSVC)
   add_compile_options(/Z7)
+  # Static CRT (/MT) everywhere to match CEF. MUST be before any
+  # add_library / add_executable / FetchContent, or libs default to /MD.
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
 # Get the glad from external folder
@@ -66,13 +69,39 @@ target_link_libraries(http PUBLIC ws2_32)
 set(CEF_ROOT "${CMAKE_SOURCE_DIR}/external/cef")
 list(APPEND CMAKE_MODULE_PATH "${CEF_ROOT}/cmake")
 
-set (CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+# Use the plain-executable path
+set(USE_SANDBOX OFF CACHE BOOL "" FORCE)
+
 set(CEF_DEBUG_INFO_FLAG "/Z7" CACHE STRING "" FORCE)
 
 find_package(CEF REQUIRED)
 
 add_subdirectory(${CEF_ROOT}/libcef_dll libcef_dll_wrapper)
 # ---- CEF end
+
+# Logical target that lnks libcef.lib (Debug/Release)
+ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
+
+# Where CEF binaries + resources get copied.
+SET_CEF_TARGET_OUT_DIR()
+
+# ---- The shell (CEF host)
+add_executable(AlgoLens WIN32
+  source/shell/main.cpp
+  source/shell/AlgoLensApp.cpp
+  source/shell/AlgoLensClient.cpp
+)
+
+SET_EXECUTABLE_TARGET_PROPERTIES(AlgoLens)
+set_target_properties(AlgoLens PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CEF_TARGET_OUT_DIR}")
+add_dependencies(AlgoLens libcef_dll_wrapper)
+target_link_libraries(AlgoLens libcef_lib libcef_dll_wrapper http ${CEF_STANDARD_LIBS})
+target_include_directories(AlgoLens PRIVATE ${CEF_ROOT})
+
+# Copy libcef.dll, .pak/.dat resources, locales next to AlgoLens.exe.
+COPY_FILES(AlgoLens "${CEF_BINARY_FILES}"   "${CEF_BINARY_DIR}"   "${CEF_TARGET_OUT_DIR}")
+COPY_FILES(AlgoLens "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${CEF_TARGET_OUT_DIR}")
 
 add_executable(AlgoLensRenderer
   source/renderers/components/variable/Variables.cpp
