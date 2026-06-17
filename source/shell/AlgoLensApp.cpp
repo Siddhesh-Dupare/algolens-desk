@@ -69,6 +69,9 @@ void AlgoLensApp::OnContextInitialized() {
     // Serve the Vue build (dist copied to <exe>/app) on localhost.
     httpServer_.Start(17653, exeDir() + "\\app");
 
+    // Spawn the OpenGL renderer (lives next to the shell in build\Debug).
+    processManager_.Spawn(exeDir() + "\\AlgoLensRenderer.exe");
+
     std::string bun = findBunExe();
     std::string serverDir = findServerDir();
     if (!serverDir.empty()) {
@@ -80,6 +83,7 @@ void AlgoLensApp::OnContextInitialized() {
     CefRefPtr<AlgoLensClient> client(new AlgoLensClient());
 
     CefWindowInfo window_info;
+    window_info.runtime_style = CEF_RUNTIME_STYLE_ALLOY;
     window_info.SetAsPopup(nullptr, "AlgoLens");
 
     CefBrowserSettings browser_settings;

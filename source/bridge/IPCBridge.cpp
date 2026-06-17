@@ -1,5 +1,9 @@
 #include "IPCBridge.h"
 #include "../ipc/IRChannel.h"
+#include "../shell/Docking.h"
+#include <json.hpp>
+
+using json = nlohmann::json;
 
 IPCBridge::IPCBridge() {
     shm_.CreateWriter(IR_SHM_NAME, IR_SHM_SIZE);
@@ -11,7 +15,19 @@ bool IPCBridge::OnQuery(CefRefPtr<CefBrowser> browser,
     const CefString& request,
     bool persistent,
     CefRefPtr<Callback> callback) {
-        shm_.Write(request.ToString());
+        const std::string req = request.ToString();
+        try {
+            json j = json::parse(req);
+            if (j.value("type", std::string()) == "bounds") {
+                SetDockedRendererBounds(j.value("x", 0), j.value("y", 0),
+                                        j.value("w", 0), j.value("h", 0));
+                callback->Success("ok");
+                return true;
+            }
+        } catch (...) {
+            // not JSON / no "type" — treat it as Visual IR below
+        }
+        shm_.Write(req);
         callback->Success("ok");
         return true;
 }
