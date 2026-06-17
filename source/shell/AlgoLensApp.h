@@ -3,6 +3,7 @@
 #include "include/cef_command_line.h"
 #include "include/wrapper/cef_message_router.h"
 #include "../http/HTTPServer.h"
+#include "../process/ProcessManager.h"
 
 class AlgoLensApp : public CefApp, public CefBrowserProcessHandler, public CefRenderProcessHandler {
     public:
@@ -16,6 +17,8 @@ class AlgoLensApp : public CefApp, public CefBrowserProcessHandler, public CefRe
         void OnBeforeCommandLineProcessing(
             const CefString& process_type,
             CefRefPtr<CefCommandLine> command_line) override;
+
+        void StopChildren();
 
         // CefbrowserProcessHandler
         void OnContextInitialized() override;
@@ -32,6 +35,7 @@ class AlgoLensApp : public CefApp, public CefBrowserProcessHandler, public CefRe
 
     private:
         HTTPServer httpServer_;
+        ProcessManager processManager_;
         CefRefPtr<CefMessageRouterRendererSide> renderRouter_;
         IMPLEMENT_REFCOUNTING(AlgoLensApp);
 };

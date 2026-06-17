@@ -16,6 +16,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPTSTR, int) {
 
     CefInitialize(main_args, settings, app.get(), nullptr);
     CefRunMessageLoop();
+    app->StopChildren();
     CefShutdown();
     return 0;
 }

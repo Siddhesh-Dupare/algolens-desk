@@ -91,6 +91,7 @@ add_executable(AlgoLens WIN32
   source/shell/AlgoLensApp.cpp
   source/shell/AlgoLensClient.cpp
   source/bridge/IPCBridge.cpp
+  source/process/ProcessManager.cpp
 )
 
 SET_EXECUTABLE_TARGET_PROPERTIES(AlgoLens)
@@ -121,6 +122,10 @@ target_link_libraries(AlgoLensRenderer PRIVATE
   glad
   ipc
 )
+
+set_target_properties(AlgoLensRenderer PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CEF_TARGET_OUT_DIR}")
+
 
 # ---- The test writer (stands in for the CEF shell)
 add_executable(IRWriter source/tools/ir_writer_main.cpp)
