@@ -42,7 +42,7 @@ bool app::init() {
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
     // SDL Window
-    window = SDL_CreateWindow("AlgoLens", WIDTH, HEIGHT,
+    window = SDL_CreateWindow("AlgoLensRenderer", WIDTH, HEIGHT,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (!window) {
         SDL_Log("Window creation failed: %s", SDL_GetError());
