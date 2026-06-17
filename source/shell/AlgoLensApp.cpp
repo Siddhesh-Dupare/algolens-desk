@@ -24,7 +24,6 @@ void AlgoLensApp::OnBeforeCommandLineProcessing(
     command_line->AppendSwitchWithValue("disable-features", "HttpsUpgrades");
 }
 
-
 void AlgoLensApp::OnContextInitialized() {
     CEF_REQUIRE_UI_THREAD();
 
@@ -41,4 +40,29 @@ void AlgoLensApp::OnContextInitialized() {
     CefBrowserHost::CreateBrowser(
         window_info, client, "http://localhost:17653",
         browser_settings, nullptr, nullptr);
+}
+
+// ---- Render process: this is what injects window.cefQuery into JS
+void AlgoLensApp::OnWebKitInitialized() {
+    CefMessageRouterConfig config;
+    renderRouter_ = CefMessageRouterRendererSide::Create(config);
+}
+
+void AlgoLensApp::OnContextCreated(CefRefPtr<CefBrowser> browser,
+                                   CefRefPtr<CefFrame> frame,
+                                   CefRefPtr<CefV8Context> context) {
+    renderRouter_->OnContextCreated(browser, frame, context);
+}
+
+void AlgoLensApp::OnContextReleased(CefRefPtr<CefBrowser> browser,
+                                    CefRefPtr<CefFrame> frame,
+                                    CefRefPtr<CefV8Context> context) {
+    renderRouter_->OnContextReleased(browser, frame, context);
+}
+
+bool AlgoLensApp::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                           CefRefPtr<CefFrame> frame,
+                                           CefProcessId source_process,
+                                           CefRefPtr<CefProcessMessage> message) {
+    return renderRouter_->OnProcessMessageReceived(browser, frame, source_process, message);
 }
