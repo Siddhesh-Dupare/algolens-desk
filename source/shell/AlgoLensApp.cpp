@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <string>
 #include <filesystem>
+#include <winuser.h>
 
 #include "include/cef_browser.h"
 #include "include/wrapper/cef_helpers.h"
@@ -85,6 +86,14 @@ void AlgoLensApp::OnContextInitialized() {
     CefWindowInfo window_info;
     window_info.runtime_style = CEF_RUNTIME_STYLE_ALLOY;
     window_info.SetAsPopup(nullptr, "AlgoLens");
+    window_info.style = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE;
+
+    int sw = GetSystemMetrics(SM_CXSCREEN), sh = GetSystemMetrics(SM_CYSCREEN);
+    int ww = sw * 4 / 5, wh = sh * 4 / 5;
+    window_info.bounds.x = (sw - ww) / 2;
+    window_info.bounds.y = (sh - wh) / 2;
+    window_info.bounds.width = ww;
+    window_info.bounds.height = wh;
 
     CefBrowserSettings browser_settings;
 

@@ -15,19 +15,36 @@ bool IPCBridge::OnQuery(CefRefPtr<CefBrowser> browser,
     const CefString& request,
     bool persistent,
     CefRefPtr<Callback> callback) {
-        const std::string req = request.ToString();
-        try {
-            json j = json::parse(req);
-            if (j.value("type", std::string()) == "bounds") {
-                SetDockedRendererBounds(j.value("x", 0), j.value("y", 0),
-                                        j.value("w", 0), j.value("h", 0));
-                callback->Success("ok");
-                return true;
-            }
-        } catch (...) {
-            // not JSON / no "type" — treat it as Visual IR below
+    const std::string req = request.ToString();
+    try {
+        json j = json::parse(req);
+        if (j.value("type", std::string()) == "bounds") {
+            SetDockedRendererBounds(j.value("x", 0), j.value("y", 0),
+                                    j.value("w", 0), j.value("h", 0));
+            callback->Success("ok");
+            return true;
         }
-        shm_.Write(req);
-        callback->Success("ok");
-        return true;
+        if (j.value("type", std::string()) == "closeWindow") {
+            browser->GetHost()->CloseBrowser(false);
+            callback->Success("ok");
+            return true;
+        }
+        if (j.value("type", std::string()) == "minimizeWindow") {
+            HWND h = GetAncestor(browser->GetHost()->GetWindowHandle(), GA_ROOT);
+            ShowWindow(h, SW_MINIMIZE);
+            callback->Success("ok");
+            return true;
+        }
+        if (j.value("type", std::string()) == "maximizeWindow") {
+            HWND h = GetAncestor(browser->GetHost()->GetWindowHandle(), GA_ROOT);
+            ShowWindow(h, IsZoomed(h) ? SW_RESTORE : SW_MAXIMIZE);
+            callback->Success("ok");
+            return true;
+        }
+    } catch (...) {
+        // not JSON / no "type" — treat it as Visual IR below
+    }
+    shm_.Write(req);
+    callback->Success("ok");
+    return true;
 }
