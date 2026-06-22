@@ -1,34 +1,62 @@
 #include "Array.h"
 #include <string>
 
-void Array::render(NVGcontext* nvgContext, int width, int height) {
-    int boxW = 60;
-    int boxH = 60;
-    int gap = 12;
+void Array::render(NVGcontext* vg, int width, int height) {
+    const int boxW = 60, boxH = 60, gap = 12;
+    const int n = (int)data_.size();
+    if (n == 0) return;
 
-    int n = (int)data_.size();
+    const int total = n * boxW + (n - 1) * gap;
+    const float startX = (width - total) / 2.0f;
+    const float startY = (height - boxH) / 2.0f;
 
-    int total = n * boxW + (n - 1) * gap;
+    nvgFontFace(vg, "sans");
 
-    // Center it horizontally
-    float startX = (width - total) / 2.0f;
-    float startY = (height - boxH) / 2.0f;
+    for (int i = 0; i < n; i++) {
+        const float x = startX + i * (boxW + gap);
 
-    for (size_t i = 0; i < data_.size(); i++) {
-        int x = startX + i * (boxW + gap);
+        // Fill color by highlight state (default = dark slate).
+        NVGcolor fill = nvgRGB(45, 55, 72);
+        auto it = highlights_.find(i);
+        if (it != highlights_.end()) {
+            const std::string& s = it->second;
+            if (s == "swap")         fill = nvgRGB(220, 70, 70);    // red
+            else if (s == "compare") fill = nvgRGB(230, 180, 50);   // amber
+            else if (s == "sorted")  fill = nvgRGB(70, 170, 90);    // green
+            else if (s == "active")  fill = nvgRGB(60, 130, 220);   // blue
+        }
 
-        nvgBeginPath(nvgContext);
-        nvgRoundedRect(nvgContext, x, startY, boxW, boxH, 6);
-        nvgFillColor(nvgContext, nvgRGB(45, 55, 72));
-        nvgFill(nvgContext);
+        // Box.
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, x, startY, (float)boxW, (float)boxH, 6);
+        nvgFillColor(vg, fill);
+        nvgFill(vg);
 
-        nvgFontSize(nvgContext, 22);
-        nvgFontFace(nvgContext, "sans");
-        nvgTextAlign(nvgContext, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
-        nvgFillColor(nvgContext, nvgRGB(235, 235, 235));
+        // Value.
+        nvgFontSize(vg, 22);
+        nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+        nvgFillColor(vg, nvgRGB(235, 235, 235));
+        nvgText(vg, x + boxW / 2.0f, startY + boxH / 2.0f,
+                std::to_string(data_[i]).c_str(), nullptr);
 
-        std::string s = std::to_string(data_[i]);
+        // Index label below the box.
+        nvgFontSize(vg, 13);
+        nvgFillColor(vg, nvgRGB(120, 120, 130));
+        nvgText(vg, x + boxW / 2.0f, startY + boxH + 14.0f,
+                std::to_string(i).c_str(), nullptr);
+    }
 
-        nvgText(nvgContext, x + boxW / 2.0f, startY + boxH / 2.0f, s.c_str(), nullptr);
+    // Pointer labels above the boxes (stack upward when several share an index).
+    nvgFontSize(vg, 15);
+    nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
+    std::unordered_map<int, int> slots;  // index -> labels already placed there
+    for (const auto& p : pointers_) {
+        const int idx = p.second;
+        if (idx < 0 || idx >= n) continue;
+        const float x = startX + idx * (boxW + gap) + boxW / 2.0f;
+        const int slot = slots[idx]++;
+        const float y = startY - 18.0f - slot * 18.0f;
+        nvgFillColor(vg, nvgRGB(90, 200, 250));  // cyan
+        nvgText(vg, x, y, p.first.c_str(), nullptr);
     }
 }

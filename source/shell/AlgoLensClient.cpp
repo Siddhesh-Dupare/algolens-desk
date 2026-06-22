@@ -94,11 +94,10 @@ static void dockRenderer(HWND cefHwnd) {
     SetParent(child, parent);
     g_dockedRenderer = child;
 
-    // Initial placement (right half) until the Vue panel sends real bounds.
-    RECT rc; GetClientRect(parent, &rc);
-    int w = rc.right - rc.left, h = rc.bottom - rc.top;
-    SetWindowPos(child, HWND_TOP, w / 2, 0, w / 2, h,
-                 SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+    // Start hidden (zero size). The Vue visualizer panel reports its real rect
+    // via setRendererBounds; until then we don't want a floating panel.
+    SetWindowPos(child, HWND_TOP, 0, 0, 0, 0,
+                 SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOACTIVATE);
 }
 
 void SetDockedRendererBounds(int x, int y, int w, int h) {

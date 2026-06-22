@@ -17,7 +17,23 @@ std::vector<std::unique_ptr<BaseRenderer>> IRParser::buildRenderersFromIR(const 
 
             if (type == "array") {
                 std::vector<int> vals = c["values"].get<std::vector<int>>();
-                out.push_back(std::make_unique<Array>(std::move(vals)));
+
+                std::unordered_map<int, std::string> highlights;
+                if (c.contains("highlights") && c["highlights"].is_object()) {
+                    for (auto& el : c["highlights"].items()) {
+                        highlights[std::stoi(el.key())] = el.value().get<std::string>();
+                    }
+                }
+
+                std::vector<std::pair<std::string, int>> pointers;
+                if (c.contains("pointers") && c["pointers"].is_object()) {
+                    for (auto& el : c["pointers"].items()) {
+                        pointers.emplace_back(el.key(), el.value().get<int>());
+                    }
+                }
+
+                out.push_back(std::make_unique<Array>(
+                    std::move(vals), std::move(highlights), std::move(pointers)));
             }
             else if (type == "variables") {
                 std::vector<Variable> vars;
