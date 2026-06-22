@@ -45,7 +45,6 @@ static std::string findBunExe() {
     return "bun.exe";  // last resort: hope it's on PATH
 }
 
-
 static std::string findServerDir() {
     // Installed layout: <exe>\algolens-server
     fs::path installed = fs::path(exeDir()) / "algolens-server";
@@ -55,6 +54,29 @@ static std::string findServerDir() {
     if (fs::exists(dev)) return fs::canonical(dev).string();
     return "";
 }
+
+static std::string findNodeExe() {
+    std::string pf = getEnv("ProgramFiles");
+    if (!pf.empty()) {
+        fs::path p = fs::path(pf) / "nodejs" / "node.exe";
+        if (fs::exists(p)) return p.string();
+    }
+    std::string pf86 = getEnv("ProgramFiles(x86)");
+    if (!pf86.empty()) {
+        fs::path p = fs::path(pf86) / "nodejs" / "node.exe";
+        if (fs::exists(p)) return p.string();
+    }
+    return "node.exe";  // fallback to PATH
+}
+
+static std::string findTerminalDir() {
+    fs::path installed = fs::path(exeDir()) / "algolens-terminal";
+    if (fs::exists(installed)) return installed.string();
+    fs::path dev = fs::path(exeDir()) / ".." / ".." / ".." / "algolens-terminal";
+    if (fs::exists(dev)) return fs::canonical(dev).string();
+    return "";
+}
+
 
 void AlgoLensApp::OnBeforeCommandLineProcessing(
     const CefString& process_type,
@@ -79,6 +101,12 @@ void AlgoLensApp::OnContextInitialized() {
         // Run the entry file directly — NOT `bun run dev` (its --watch script
         // re-resolves bun via PATH, which a GUI process doesn't have).
         processManager_.Spawn(bun, "run src/index.ts", serverDir);
+    }
+
+    std::string node = findNodeExe();
+    std::string termDir = findTerminalDir();
+    if (!termDir.empty()) {
+        processManager_.Spawn(node, "index.js", termDir);
     }
 
     CefRefPtr<AlgoLensClient> client(new AlgoLensClient());
