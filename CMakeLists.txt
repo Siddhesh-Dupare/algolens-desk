@@ -108,6 +108,7 @@ COPY_FILES(AlgoLens "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${CEF_TARGET_
 add_executable(AlgoLensRenderer
   source/renderers/components/variable/Variables.cpp
   source/renderers/components/array/Array.cpp
+  source/renderers/components/grid/Grid.cpp
   source/ir/IRParser.cpp
   source/drawing/nanovg_impl.cpp
   source/app.cpp
