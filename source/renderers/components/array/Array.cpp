@@ -1,5 +1,14 @@
 #include "Array.h"
 #include <string>
+#include <cmath>
+
+// Linear interpolation between two NanoVG colors (components are 0..1 floats).
+static NVGcolor lerpColor(NVGcolor a, NVGcolor b, float t) {
+    return nvgRGBAf(a.r + (b.r - a.r) * t,
+                    a.g + (b.g - a.g) * t,
+                    a.b + (b.b - a.b) * t,
+                    a.a + (b.a - a.a) * t);
+}
 
 void Array::render(NVGcontext* vg, int width, int height) {
     const int boxW = 60, boxH = 60, gap = 12;
@@ -10,36 +19,50 @@ void Array::render(NVGcontext* vg, int width, int height) {
     const float startX = (width - total) / 2.0f;
     const float startY = (height - boxH) / 2.0f;
 
+    // Per-step tween progress (0..1) since this frame's renderer was created.
+    using namespace std::chrono;
+    float t = duration<float>(steady_clock::now() - birth_).count() / 0.22f; // ~220ms
+    if (t > 1.0f) t = 1.0f;
+    const float ease = 1.0f - std::pow(1.0f - t, 3.0f); // easeOutCubic
+
+    const NVGcolor base = nvgRGB(45, 55, 72);
+
     nvgFontFace(vg, "sans");
 
     for (int i = 0; i < n; i++) {
         const float x = startX + i * (boxW + gap);
 
-        // Fill color by highlight state (default = dark slate).
-        NVGcolor fill = nvgRGB(45, 55, 72);
+        // Target fill color by highlight state.
+        NVGcolor target = base;
         auto it = highlights_.find(i);
         if (it != highlights_.end()) {
             const std::string& s = it->second;
-            if (s == "swap")         fill = nvgRGB(220, 70, 70);    // red
-            else if (s == "compare") fill = nvgRGB(230, 180, 50);   // amber
-            else if (s == "sorted")  fill = nvgRGB(70, 170, 90);    // green
-            else if (s == "active")  fill = nvgRGB(60, 130, 220);   // blue
+            if (s == "swap")         target = nvgRGB(220, 70, 70);    // red
+            else if (s == "compare") target = nvgRGB(230, 180, 50);   // amber
+            else if (s == "sorted")  target = nvgRGB(70, 170, 90);    // green
+            else if (s == "active")  target = nvgRGB(60, 130, 220);   // blue
         }
+        const bool highlighted = (it != highlights_.end());
+
+        // Tween: highlighted boxes fade their color in and settle from a small lift.
+        const NVGcolor fill = highlighted ? lerpColor(base, target, ease) : target;
+        const float lift = highlighted ? (1.0f - ease) * 10.0f : 0.0f;
+        const float y = startY - lift;
 
         // Box.
         nvgBeginPath(vg);
-        nvgRoundedRect(vg, x, startY, (float)boxW, (float)boxH, 6);
+        nvgRoundedRect(vg, x, y, (float)boxW, (float)boxH, 6);
         nvgFillColor(vg, fill);
         nvgFill(vg);
 
-        // Value.
+        // Value (moves with the box).
         nvgFontSize(vg, 22);
         nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
         nvgFillColor(vg, nvgRGB(235, 235, 235));
-        nvgText(vg, x + boxW / 2.0f, startY + boxH / 2.0f,
+        nvgText(vg, x + boxW / 2.0f, y + boxH / 2.0f,
                 std::to_string(data_[i]).c_str(), nullptr);
 
-        // Index label below the box.
+        // Index label below (fixed, doesn't bounce with the box).
         nvgFontSize(vg, 13);
         nvgFillColor(vg, nvgRGB(120, 120, 130));
         nvgText(vg, x + boxW / 2.0f, startY + boxH + 14.0f,

@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include <unordered_map>
+#include <chrono>
 
 #include "../../BaseRenderer.h"
 #include <nanovg.h>
@@ -24,4 +25,7 @@ private:
     std::vector<int> data_;
     std::unordered_map<int, std::string> highlights_;    // index -> state (compare/swap/sorted/active)
     std::vector<std::pair<std::string, int>> pointers_;  // pointer name -> index
+
+    // When this frame's renderer was created — drives the per-step entrance tween.
+    std::chrono::steady_clock::time_point birth_ = std::chrono::steady_clock::now();
 };
