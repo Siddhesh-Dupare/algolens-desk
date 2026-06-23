@@ -16,7 +16,11 @@ std::vector<std::unique_ptr<BaseRenderer>> IRParser::buildRenderersFromIR(const 
             std::string type = c.value("type", "");
 
             if (type == "array") {
-                std::vector<int> vals = c["values"].get<std::vector<int>>();
+                // Values are display strings; accept JSON numbers or strings.
+                std::vector<std::string> vals;
+                for (auto& el : c["values"]) {
+                    vals.push_back(el.is_string() ? el.get<std::string>() : el.dump());
+                }
 
                 std::unordered_map<int, std::string> highlights;
                 if (c.contains("highlights") && c["highlights"].is_object()) {

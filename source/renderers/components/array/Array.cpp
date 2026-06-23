@@ -72,7 +72,7 @@ void Array::render(NVGcontext* vg, int width, int height) {
         nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
         nvgFillColor(vg, nvgRGB(235, 235, 235));
         nvgText(vg, x + boxW / 2.0f, y + boxH / 2.0f,
-                std::to_string(data_[i]).c_str(), nullptr);
+                data_[i].c_str(), nullptr);
 
         // Index label below (fixed baseline, doesn't bounce).
         nvgFontSize(vg, std::max(9.0f, 13.0f * fs));

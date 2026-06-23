@@ -12,7 +12,7 @@
 class Array : public BaseRenderer {
 public:
     // values + optional per-element highlight states + optional named pointers.
-    Array(std::vector<int> data,
+    Array(std::vector<std::string> data,
           std::unordered_map<int, std::string> highlights = {},
           std::vector<std::pair<std::string, int>> pointers = {})
         : data_(std::move(data)),
@@ -22,7 +22,7 @@ public:
     void render(NVGcontext* nvgContext, int width, int height) override;
 
 private:
-    std::vector<int> data_;
+    std::vector<std::string> data_;  // display strings (ints, chars, …)
     std::unordered_map<int, std::string> highlights_;    // index -> state (compare/swap/sorted/active)
     std::vector<std::pair<std::string, int>> pointers_;  // pointer name -> index
 
