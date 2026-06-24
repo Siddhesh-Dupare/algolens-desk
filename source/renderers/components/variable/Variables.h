@@ -16,6 +16,7 @@ class Variables : public BaseRenderer {
         Variables(std::vector<Variable> vars) : vars_(std::move(vars)) {}
 
         void render(NVGcontext* nvgContext, int width, int height) override;
+        bool isOverlay() const override { return true; }  // corner panel, not a band
 
     private:
         std::vector<Variable> vars_;

@@ -4,6 +4,8 @@
 #include "../renderers/components/array/Array.h"
 #include "../renderers/components/variable/Variables.h"
 #include "../renderers/components/grid/Grid.h"
+#include "../renderers/components/stack/Stack.h"
+#include "../renderers/components/queue/Queue.h"
 
 using json = nlohmann::json;
 
@@ -74,6 +76,31 @@ std::vector<std::unique_ptr<BaseRenderer>> IRParser::buildRenderersFromIR(const 
 
                 out.push_back(std::make_unique<Grid>(
                     std::move(grid), std::move(highlights), std::move(pointers)));
+            }
+            else if (type == "stack" || type == "queue") {
+                // Both are 1-D: values (display strings) + int-keyed highlights.
+                std::vector<std::string> vals;
+                for (auto& el : c["values"]) {
+                    vals.push_back(el.is_string() ? el.get<std::string>() : el.dump());
+                }
+
+                std::unordered_map<int, std::string> highlights;
+                if (c.contains("highlights") && c["highlights"].is_object()) {
+                    for (auto& el : c["highlights"].items()) {
+                        highlights[std::stoi(el.key())] = el.value().get<std::string>();
+                    }
+                }
+
+                if (type == "stack") {
+                    const int top = c.value("top", (int)vals.size() - 1);
+                    out.push_back(std::make_unique<Stack>(
+                        std::move(vals), std::move(highlights), top));
+                } else {
+                    const int front = c.value("front", vals.empty() ? -1 : 0);
+                    const int rear = c.value("rear", (int)vals.size() - 1);
+                    out.push_back(std::make_unique<Queue>(
+                        std::move(vals), std::move(highlights), front, rear));
+                }
             }
         }
     } catch (const std::exception& e) {

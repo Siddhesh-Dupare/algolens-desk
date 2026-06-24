@@ -126,7 +126,27 @@ void app::run() {
         nvgBeginFrame(nvgContext, pw, ph, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        for (auto& r : renderer_) r->render(nvgContext, pw, ph);
+        // Spatial structures (array/stack/queue/grid) each get a horizontal band
+        // so several can be shown at once; overlays (variables) draw full-panel.
+        int spatial = 0;
+        for (auto& r : renderer_) if (!r->isOverlay()) spatial++;
+        if (spatial < 1) spatial = 1;
+        const float bandH = (float)ph / (float)spatial;
+
+        int bandIdx = 0;
+        for (auto& r : renderer_) {
+            if (r->isOverlay()) {
+                r->render(nvgContext, pw, ph);
+                continue;
+            }
+            const float y = bandIdx * bandH;
+            nvgSave(nvgContext);
+            nvgScissor(nvgContext, 0.0f, y, (float)pw, bandH);
+            nvgTranslate(nvgContext, 0.0f, y);
+            r->render(nvgContext, pw, (int)bandH);
+            nvgRestore(nvgContext);
+            bandIdx++;
+        }
 
         nvgEndFrame(nvgContext);
 
