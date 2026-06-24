@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "renderers/BaseRenderer.h"
+#include "ir/IRParser.h"
 #include "ipc/SharedMemory.h"
 
 class app {
@@ -17,12 +18,17 @@ class app {
         void shutdown();
 
     private:
+        // Lay out a group of renderers (band layout + variables overlay) inside
+        // the rectangle (x, y, w, h).
+        void renderGroup(std::vector<std::unique_ptr<BaseRenderer>>& group,
+                         float x, float y, float w, float h);
+
         SDL_Window* window;
         SDL_GLContext glContext;
 
         NVGcontext* nvgContext;
 
-        std::vector<std::unique_ptr<BaseRenderer>> renderer_;
+        Scene scene_;
 
         SharedMemory shm_;
         bool shmOpen_ = false;

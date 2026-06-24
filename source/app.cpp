@@ -110,7 +110,7 @@ void app::run() {
             if (shm_.Read(json, seq) && seq != lastSeq_) {
                 lastSeq_ = seq;
                 IRParser parser;
-                renderer_ = parser.buildRenderersFromIR(json);
+                scene_ = parser.buildSceneFromIR(json);
             }
         }
 
@@ -126,30 +126,92 @@ void app::run() {
         nvgBeginFrame(nvgContext, pw, ph, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        // Spatial structures (array/stack/queue/grid) each get a horizontal band
-        // so several can be shown at once; overlays (variables) draw full-panel.
-        int spatial = 0;
-        for (auto& r : renderer_) if (!r->isOverlay()) spatial++;
-        if (spatial < 1) spatial = 1;
-        const float bandH = (float)ph / (float)spatial;
+        const int nParked = (int)scene_.parked.size();
+        if (nParked == 0) {
+            // No suspended scopes: the active structures use the whole panel.
+            renderGroup(scene_.main, 0.0f, 0.0f, (float)pw, (float)ph);
+        } else {
+            // Active structures on the main stage; parked scopes as a bottom rail.
+            float stripH = (float)ph * 0.24f;
+            if (stripH < 96.0f) stripH = 96.0f;
+            if (stripH > (float)ph * 0.4f) stripH = (float)ph * 0.4f;
+            const float mainH = (float)ph - stripH;
 
-        int bandIdx = 0;
-        for (auto& r : renderer_) {
-            if (r->isOverlay()) {
-                r->render(nvgContext, pw, ph);
-                continue;
+            renderGroup(scene_.main, 0.0f, 0.0f, (float)pw, mainH);
+
+            // Divider line above the rail.
+            nvgBeginPath(nvgContext);
+            nvgRect(nvgContext, 0.0f, mainH, (float)pw, 1.0f);
+            nvgFillColor(nvgContext, nvgRGB(40, 44, 54));
+            nvgFill(nvgContext);
+
+            const float pad = 8.0f;
+            const float cardW = ((float)pw - pad * (nParked + 1)) / (float)nParked;
+            const float cardLabelH = 18.0f;
+            for (int i = 0; i < nParked; i++) {
+                ParkedScene& ps = scene_.parked[i];
+                const float cx = pad + i * (cardW + pad);
+                const float cy = mainH + pad;
+                const float ch = stripH - 2.0f * pad;
+
+                // Card background + border.
+                nvgBeginPath(nvgContext);
+                nvgRoundedRect(nvgContext, cx, cy, cardW, ch, 6.0f);
+                nvgFillColor(nvgContext, nvgRGB(18, 21, 28));
+                nvgFill(nvgContext);
+                nvgStrokeColor(nvgContext, nvgRGB(48, 53, 66));
+                nvgStrokeWidth(nvgContext, 1.0f);
+                nvgStroke(nvgContext);
+
+                // Label (the variable/scope name).
+                nvgFontFace(nvgContext, "sans");
+                nvgFontSize(nvgContext, 12.0f);
+                nvgTextAlign(nvgContext, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                nvgFillColor(nvgContext, nvgRGB(150, 156, 170));
+                nvgText(nvgContext, cx + 8.0f, cy + cardLabelH / 2.0f + 2.0f,
+                        ps.label.c_str(), nullptr);
+
+                // The structure, scaled into the card body below the label.
+                renderGroup(ps.renderers, cx, cy + cardLabelH,
+                            cardW, ch - cardLabelH);
             }
-            const float y = bandIdx * bandH;
-            nvgSave(nvgContext);
-            nvgScissor(nvgContext, 0.0f, y, (float)pw, bandH);
-            nvgTranslate(nvgContext, 0.0f, y);
-            r->render(nvgContext, pw, (int)bandH);
-            nvgRestore(nvgContext);
-            bandIdx++;
         }
 
         nvgEndFrame(nvgContext);
 
         SDL_GL_SwapWindow(window);
     }
+}
+
+void app::renderGroup(std::vector<std::unique_ptr<BaseRenderer>>& group,
+                      float x, float y, float w, float h) {
+    if (w <= 0.0f || h <= 0.0f) return;
+
+    nvgSave(nvgContext);
+    nvgIntersectScissor(nvgContext, x, y, w, h);
+    nvgTranslate(nvgContext, x, y);
+
+    // Spatial structures (array/stack/queue/grid/tree/graph/list) each get a
+    // horizontal band; overlays (variables) draw across the whole group.
+    int spatial = 0;
+    for (auto& r : group) if (!r->isOverlay()) spatial++;
+    if (spatial < 1) spatial = 1;
+    const float bandH = h / (float)spatial;
+
+    int bandIdx = 0;
+    for (auto& r : group) {
+        if (r->isOverlay()) {
+            r->render(nvgContext, (int)w, (int)h);
+            continue;
+        }
+        const float by = bandIdx * bandH;
+        nvgSave(nvgContext);
+        nvgIntersectScissor(nvgContext, 0.0f, by, w, bandH);
+        nvgTranslate(nvgContext, 0.0f, by);
+        r->render(nvgContext, (int)w, (int)bandH);
+        nvgRestore(nvgContext);
+        bandIdx++;
+    }
+
+    nvgRestore(nvgContext);
 }

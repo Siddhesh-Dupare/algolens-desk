@@ -111,6 +111,9 @@ add_executable(AlgoLensRenderer
   source/renderers/components/grid/Grid.cpp
   source/renderers/components/stack/Stack.cpp
   source/renderers/components/queue/Queue.cpp
+  source/renderers/components/linkedlist/LinkedList.cpp
+  source/renderers/components/tree/Tree.cpp
+  source/renderers/components/graph/Graph.cpp
   source/ir/IRParser.cpp
   source/drawing/nanovg_impl.cpp
   source/app.cpp
