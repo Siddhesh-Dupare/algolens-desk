@@ -98,6 +98,11 @@ void app::run() {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT) running = false;
+            // Scroll the parked rail horizontally (vertical wheel maps to it too).
+            if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+                const float d = (event.wheel.x != 0.0f ? event.wheel.x : event.wheel.y);
+                railScrollX_ -= d * 48.0f;
+            }
         }
 
         if (!shmOpen_) {
@@ -145,14 +150,27 @@ void app::run() {
             nvgFillColor(nvgContext, nvgRGB(40, 44, 54));
             nvgFill(nvgContext);
 
+            // Cards keep a minimum width; when they overflow, the rail scrolls.
             const float pad = 8.0f;
-            const float cardW = ((float)pw - pad * (nParked + 1)) / (float)nParked;
+            const float minCardW = 168.0f;
+            float cardW = ((float)pw - pad * (nParked + 1)) / (float)nParked;
+            if (cardW < minCardW) cardW = minCardW;
+            const float contentW = pad + nParked * (cardW + pad);
+            const float maxScroll = contentW - (float)pw > 0.0f ? contentW - (float)pw : 0.0f;
+            if (railScrollX_ < 0.0f) railScrollX_ = 0.0f;
+            if (railScrollX_ > maxScroll) railScrollX_ = maxScroll;
+
             const float cardLabelH = 18.0f;
+            const float cy = mainH + pad;
+            const float ch = stripH - 2.0f * pad - (maxScroll > 0.0f ? 6.0f : 0.0f);
+
+            // Clip the rail so off-screen cards are hidden during scrolling.
+            nvgSave(nvgContext);
+            nvgIntersectScissor(nvgContext, 0.0f, mainH, (float)pw, stripH);
             for (int i = 0; i < nParked; i++) {
                 ParkedScene& ps = scene_.parked[i];
-                const float cx = pad + i * (cardW + pad);
-                const float cy = mainH + pad;
-                const float ch = stripH - 2.0f * pad;
+                const float cx = pad + i * (cardW + pad) - railScrollX_;
+                if (cx + cardW < 0.0f || cx > (float)pw) continue;  // fully off-screen
 
                 // Card background + border.
                 nvgBeginPath(nvgContext);
@@ -172,8 +190,25 @@ void app::run() {
                         ps.label.c_str(), nullptr);
 
                 // The structure, scaled into the card body below the label.
-                renderGroup(ps.renderers, cx, cy + cardLabelH,
-                            cardW, ch - cardLabelH);
+                renderGroup(ps.renderers, cx, cy + cardLabelH, cardW, ch - cardLabelH);
+            }
+            nvgRestore(nvgContext);
+
+            // Scrollbar showing the rail position when it overflows.
+            if (maxScroll > 0.0f) {
+                const float trackY = (float)ph - 4.0f;
+                nvgBeginPath(nvgContext);
+                nvgRoundedRect(nvgContext, pad, trackY, (float)pw - 2.0f * pad, 3.0f, 1.5f);
+                nvgFillColor(nvgContext, nvgRGB(30, 34, 42));
+                nvgFill(nvgContext);
+
+                const float trackW = (float)pw - 2.0f * pad;
+                const float thumbW = trackW * ((float)pw / contentW);
+                const float thumbX = pad + (trackW - thumbW) * (railScrollX_ / maxScroll);
+                nvgBeginPath(nvgContext);
+                nvgRoundedRect(nvgContext, thumbX, trackY, thumbW, 3.0f, 1.5f);
+                nvgFillColor(nvgContext, nvgRGB(90, 100, 120));
+                nvgFill(nvgContext);
             }
         }
 

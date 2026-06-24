@@ -34,6 +34,8 @@ class app {
         bool shmOpen_ = false;
         uint32_t lastSeq_ = 0;
 
+        float railScrollX_ = 0.0f;  // horizontal scroll offset of the parked rail
+
         bool running;
         int WIDTH;
         int HEIGHT;

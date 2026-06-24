@@ -9,6 +9,7 @@
 #include "../renderers/components/linkedlist/LinkedList.h"
 #include "../renderers/components/tree/Tree.h"
 #include "../renderers/components/graph/Graph.h"
+#include "../renderers/components/hashmap/HashMap.h"
 
 using json = nlohmann::json;
 
@@ -199,6 +200,27 @@ static std::vector<std::unique_ptr<BaseRenderer>> buildFromComponents(const json
                 out.push_back(std::make_unique<Graph>(
                     std::move(nodes), std::move(edges), directed,
                     std::move(highlights), std::move(pointers)));
+            }
+            else if (type == "hashmap") {
+                std::vector<std::pair<std::string, std::string>> entries;
+                if (c.contains("entries") && c["entries"].is_array()) {
+                    for (auto& e : c["entries"]) {
+                        if (!e.is_array() || e.size() < 2) continue;
+                        std::string k = e[0].is_string() ? e[0].get<std::string>() : e[0].dump();
+                        std::string val = e[1].is_string() ? e[1].get<std::string>() : e[1].dump();
+                        entries.emplace_back(std::move(k), std::move(val));
+                    }
+                }
+
+                std::unordered_map<int, std::string> highlights;
+                if (c.contains("highlights") && c["highlights"].is_object()) {
+                    for (auto& el : c["highlights"].items()) {
+                        highlights[std::stoi(el.key())] = el.value().get<std::string>();
+                    }
+                }
+
+                out.push_back(std::make_unique<HashMap>(
+                    std::move(entries), std::move(highlights)));
             }
         }
     }
