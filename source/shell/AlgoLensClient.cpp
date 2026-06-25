@@ -8,6 +8,7 @@
 #include "include/cef_app.h"
 #include "include/wrapper/cef_helpers.h"
 #include "Docking.h"
+#include "Notify.h"
 #include <atomic>
 
 static std::atomic<HWND> g_dockedRenderer{nullptr};
@@ -126,6 +127,9 @@ void AlgoLensClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
     CEF_REQUIRE_UI_THREAD();
     ++browserCount_;
 
+    // Route desktop-side errors to the web UI's toast (flushes any queued early).
+    algolens::SetNotifyBrowser(browser);
+
     HWND cefHwnd = browser->GetHost()->GetWindowHandle();
 
     // Hide the OS title bar/border while keeping the window "normal" (animations
@@ -142,6 +146,7 @@ void AlgoLensClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
 
 void AlgoLensClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
     CEF_REQUIRE_UI_THREAD();
+    algolens::SetNotifyBrowser(nullptr);
     if (--browserCount_ == 0) {
         CefQuitMessageLoop();
     }

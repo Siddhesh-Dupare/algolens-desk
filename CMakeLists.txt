@@ -90,6 +90,7 @@ add_executable(AlgoLens WIN32
   source/shell/main.cpp
   source/shell/AlgoLensApp.cpp
   source/shell/AlgoLensClient.cpp
+  source/shell/Notify.cpp
   source/bridge/IPCBridge.cpp
   source/process/ProcessManager.cpp
 )

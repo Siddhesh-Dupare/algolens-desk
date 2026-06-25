@@ -1,5 +1,6 @@
 #include "AlgoLensApp.h"
 #include "AlgoLensClient.h"
+#include "Notify.h"
 
 #include <windows.h>
 #include <string>
@@ -93,20 +94,31 @@ void AlgoLensApp::OnContextInitialized() {
     httpServer_.Start(17653, exeDir() + "\\app");
 
     // Spawn the OpenGL renderer (lives next to the shell in build\Debug).
-    processManager_.Spawn(exeDir() + "\\AlgoLensRenderer.exe");
+    if (!processManager_.Spawn(exeDir() + "\\AlgoLensRenderer.exe")) {
+        algolens::ReportError("Renderer failed to start",
+                              "Could not launch AlgoLensRenderer.exe.");
+    }
 
     std::string bun = findBunExe();
     std::string serverDir = findServerDir();
-    if (!serverDir.empty()) {
+    if (serverDir.empty()) {
+        algolens::ReportError("Execution server not found",
+                              "Could not locate the algolens-server folder.");
+    } else if (!processManager_.Spawn(bun, "run src/index.ts", serverDir)) {
         // Run the entry file directly — NOT `bun run dev` (its --watch script
         // re-resolves bun via PATH, which a GUI process doesn't have).
-        processManager_.Spawn(bun, "run src/index.ts", serverDir);
+        algolens::ReportError("Execution server failed to start",
+                              "Could not run bun at: " + bun);
     }
 
     std::string node = findNodeExe();
     std::string termDir = findTerminalDir();
-    if (!termDir.empty()) {
-        processManager_.Spawn(node, "index.js", termDir);
+    if (termDir.empty()) {
+        algolens::ReportError("Terminal server not found",
+                              "Could not locate the algolens-terminal folder.");
+    } else if (!processManager_.Spawn(node, "index.js", termDir)) {
+        algolens::ReportError("Terminal server failed to start",
+                              "Could not run node at: " + node);
     }
 
     CefRefPtr<AlgoLensClient> client(new AlgoLensClient());
