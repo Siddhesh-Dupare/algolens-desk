@@ -93,6 +93,20 @@ bool app::init() {
     return true;
 }
 
+// Subtle dotted-grid backdrop drawn behind every visualization.
+static void drawDotGrid(NVGcontext* vg, int width, int height) {
+    const float spacing = 26.0f;  // px between dots
+    const float radius = 1.3f;
+    nvgFillColor(vg, nvgRGBA(255, 255, 255, 14));  // faint white
+    for (float y = spacing * 0.5f; y < height; y += spacing) {
+        for (float x = spacing * 0.5f; x < width; x += spacing) {
+            nvgBeginPath(vg);
+            nvgCircle(vg, x, y, radius);
+            nvgFill(vg);
+        }
+    }
+}
+
 void app::run() {
     while (running) {
         SDL_Event event;
@@ -130,6 +144,9 @@ void app::run() {
         glClearColor(10.0f/255.0f, 10.0f/255.0f, 12.0f/255.0f, 1.0);
         nvgBeginFrame(nvgContext, pw, ph, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+        // Dotted-grid backdrop behind everything.
+        drawDotGrid(nvgContext, pw, ph);
 
         const int nParked = (int)scene_.parked.size();
         if (nParked == 0) {
