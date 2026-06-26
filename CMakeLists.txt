@@ -99,7 +99,7 @@ SET_EXECUTABLE_TARGET_PROPERTIES(AlgoLens)
 set_target_properties(AlgoLens PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CEF_TARGET_OUT_DIR}")
 add_dependencies(AlgoLens libcef_dll_wrapper)
-target_link_libraries(AlgoLens libcef_lib libcef_dll_wrapper http ipc nlohmann_json ${CEF_STANDARD_LIBS})
+target_link_libraries(AlgoLens libcef_lib libcef_dll_wrapper http ipc nlohmann_json shell32 ${CEF_STANDARD_LIBS})
 target_include_directories(AlgoLens PRIVATE ${CEF_ROOT})
 
 # Copy libcef.dll, .pak/.dat resources, locales next to AlgoLens.exe.

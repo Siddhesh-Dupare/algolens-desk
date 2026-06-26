@@ -2,6 +2,8 @@
 #include "../ipc/IRChannel.h"
 #include "../shell/Docking.h"
 #include <json.hpp>
+#include <windows.h>
+#include <shellapi.h>
 
 using json = nlohmann::json;
 
@@ -38,6 +40,15 @@ bool IPCBridge::OnQuery(CefRefPtr<CefBrowser> browser,
         if (j.value("type", std::string()) == "maximizeWindow") {
             HWND h = GetAncestor(browser->GetHost()->GetWindowHandle(), GA_ROOT);
             ShowWindow(h, IsZoomed(h) ? SW_RESTORE : SW_MAXIMIZE);
+            callback->Success("ok");
+            return true;
+        }
+        if (j.value("type", std::string()) == "openExternal") {
+            // Open a URL in the system browser (only http/https for safety).
+            const std::string url = j.value("url", std::string());
+            if (url.rfind("http://", 0) == 0 || url.rfind("https://", 0) == 0) {
+                ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+            }
             callback->Success("ok");
             return true;
         }
